@@ -150,10 +150,130 @@ vendor_menus = {
 }
 
 # ===============================
-# Template
+# Template (kept same style/flow)
 # ===============================
-template = """ 
-... (your existing HTML template here unchanged) ...
+template = """
+<!doctype html>
+<title>Lunch Order App</title>
+<h2>Lunch Order</h2>
+<form method="POST">
+    <label for="doc">Select DOC:</label>
+    <select name="doc" onchange="this.form.submit()">
+        <option value="">--Select DOC--</option>
+        {% for doc in team_data %}
+            <option value="{{ doc }}" {% if selected_doc == doc %}selected{% endif %}>{{ doc }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    {% if selected_doc %}
+        <label for="leader">Select Leader:</label>
+        <select name="leader" onchange="this.form.submit()">
+            <option value="">--Select Leader--</option>
+            {% for leader in team_data[selected_doc] %}
+                <option value="{{ leader }}" {% if selected_leader == leader %}selected{% endif %}>{{ leader }}</option>
+            {% endfor %}
+        </select><br><br>
+    {% endif %}
+
+    {% if selected_leader %}
+        <label for="member">Select Team Member:</label>
+        <select name="member" onchange="this.form.submit()">
+            {% set current_members = team_data[selected_doc][selected_leader] %}
+            {% for member in current_members %}
+                <option value="{{ member }}" {% if selected_member == member %}selected{% endif %}>{{ member }}</option>
+            {% endfor %}
+        </select><br><br>
+    {% endif %}
+
+    <label for="vendor">Select Vendor:</label>
+    <select name="vendor" onchange="this.form.submit()">
+        <option value="">--Select Vendor--</option>
+        {% for vendor in vendor_menus %}
+            <option value="{{ vendor }}" {% if selected_vendor == vendor %}selected{% endif %}>{{ vendor }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    {% if selected_vendor %}
+        <label for="menu">Select Menu Item:</label>
+        <select name="menu">
+            {% for item in vendor_menus[selected_vendor] %}
+                <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select><br><br>
+    {% endif %}
+
+    <label for="date">Select Date:</label>
+    <input type="date" name="date" value="{{ selected_date or '' }}" required><br><br>
+
+    <input type="submit" value="Place / Update Order">
+</form>
+
+<hr>
+<h2>Server Panel</h2>
+
+{% if not session.get('admin') %}
+    <form method="POST" action="/admin-login">
+        <label for="admin_password">Enter Admin Password:</label>
+        <input type="password" name="admin_password" required>
+        <input type="submit" value="Login as Server">
+    </form>
+{% else %}
+    <form method="POST" action="/admin-logout" style="margin-bottom:10px;">
+        <input type="submit" value="Logout Admin">
+    </form>
+
+    <div style="padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;">
+        <h3 style="margin-top:0;">Filter Orders by Date</h3>
+        <form method="GET" action="{{ url_for('order') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <div>
+                <label for="start_date">From:</label>
+                <input type="date" name="start_date" value="{{ start_date or '' }}">
+            </div>
+            <div>
+                <label for="end_date">To:</label>
+                <input type="date" name="end_date" value="{{ end_date or '' }}">
+            </div>
+            <div>
+                <input type="submit" value="Apply Filter">
+            </div>
+            <div>
+                <a href="{{ url_for('order') }}">
+                    <button type="button">Clear Filter</button>
+                </a>
+            </div>
+        </form>
+        {% if start_date or end_date %}
+            <p style="margin:8px 0 0 0;"><em>Showing orders
+                {% if start_date %} from <strong>{{ start_date }}</strong>{% endif %}
+                {% if end_date %} to <strong>{{ end_date }}</strong>{% endif %}.
+            </em></p>
+        {% else %}
+            <p style="margin:8px 0 0 0;"><em>Showing all orders (no filter).</em></p>
+        {% endif %}
+    </div>
+
+    <form action="{{ url_for('export_excel', start_date=start_date, end_date=end_date) }}" method="get" style="margin-top:10px;">
+        <button type="submit">Create Excel (current list)</button>
+    </form>
+
+    <form action="{{ url_for('clear_all') }}" method="post" style="margin-top:10px;">
+        <button type="submit" onclick="return confirm('Are you sure you want to clear all orders?')">Clear All Orders</button>
+    </form>
+{% endif %}
+
+<h3>Orders:</h3>
+<ul>
+    {% for order in orders %}
+        <li>
+            {{ order['date'] }} - {{ order['member'] }} ordered {{ order['menu'] }} from {{ order['vendor'] }} (DOC: {{ order['doc'] }})
+            {% if session.get('admin') %}
+                <form method="POST" action="/delete/{{ order['id'] }}" style="display:inline;">
+                    <input type="submit" value="Delete" onclick="return confirm('Delete this order?');">
+                </form>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
 """
 
 # ===============================
