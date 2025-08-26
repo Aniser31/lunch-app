@@ -14,7 +14,11 @@ app.secret_key = "supersecretkey"  # Required for sessions
 # ===============================
 # Persistent storage (PostgreSQL)
 # ===============================
-DATABASE_URL = os.getenv("DATABASE_URL")  # Railway injects this
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Railway sometimes gives postgres://, psycopg2 needs postgresql://
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL, sslmode="require")
@@ -92,7 +96,7 @@ def clear_orders():
     conn.close()
 
 # ===============================
-# Data (same members you provided)
+# Data
 # ===============================
 team_data = {
     "Suyogya": {
@@ -141,7 +145,7 @@ vendor_menus = {
 }
 
 # ===============================
-# Template (unchanged)
+# Template
 # ===============================
 template = """ 
 ... (your existing HTML template here unchanged) ...
@@ -194,7 +198,7 @@ def generate_orders_excel(orders_to_export, team_data):
     return bio
 
 # ===============================
-# Routes (unchanged except DB funcs)
+# Routes
 # ===============================
 @app.route("/", methods=["GET", "POST"])
 def order():
@@ -277,6 +281,9 @@ def export_excel():
 # ===============================
 # Start
 # ===============================
+
+# Always run init_db on startup (important for Railway/Gunicorn)
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
