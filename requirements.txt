@@ -1,13 +1,5 @@
-<<<<<<< HEAD
 Flask==2.3.3
 psycopg2-binary==2.9.9
 pandas==2.1.4
 openpyxl==3.1.2
 gunicorn==21.2.0
-=======
-Flask
-psycopg2-binary
-pandas
-openpyxl
-gunicorn
->>>>>>> d1028d5d141cdf40c597ee6ec6777be97db9b320
