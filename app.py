@@ -21,7 +21,12 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL, sslmode="require")
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL is not set. Did you add it in Railway?")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(db_url, sslmode="require")
 
 def init_db():
     conn = get_conn()
