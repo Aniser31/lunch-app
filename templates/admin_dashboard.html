@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h4 class="mb-3 text-center">Admin Dashboard</h4>
+
+<div class="border rounded-3 p-3 mb-3 bg-light">
+  <form method="GET" action="{{ url_for('admin') }}" class="row g-3 align-items-end">
+    <div class="col-12 col-md-4">
+      <label for="start_date" class="form-label">From</label>
+      <input id="start_date" type="date" name="start_date" value="{{ start_date or '' }}" class="form-control">
+    </div>
+    <div class="col-12 col-md-4">
+      <label for="end_date" class="form-label">To</label>
+      <input id="end_date" type="date" name="end_date" value="{{ end_date or '' }}" class="form-control">
+    </div>
+    <div class="col-12 col-md-4 d-grid">
+      <button type="submit" class="btn btn-outline-primary">Apply Filter</button>
+    </div>
+  </form>
+  {% if start_date or end_date %}
+    <p class="text-muted mt-2 mb-0">
+      Showing orders
+      {% if start_date %} from <strong>{{ start_date }}</strong>{% endif %}
+      {% if end_date %} to <strong>{{ end_date }}</strong>{% endif %}.
+    </p>
+  {% else %}
+    <p class="text-muted mt-2 mb-0">Showing all orders (no filter).</p>
+  {% endif %}
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a class="btn btn-success" href="{{ url_for('export_excel', start_date=start_date, end_date=end_date) }}">Generate Excel (Summary)</a>
+  <a class="btn btn-info" href="{{ url_for('export_food_excel', start_date=start_date, end_date=end_date) }}">Generate Food Orders</a>
+  <form action="{{ url_for('clear_all') }}" method="post" onsubmit="return confirm('Are you sure you want to clear all orders?');">
+    <button class="btn btn-outline-danger">Clear All Orders</button>
+  </form>
+</div>
+
+<h5 class="mb-2">Orders</h5>
+<ul class="list-group">
+  {% for order in orders %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        {{ order['date'] }} — <strong>{{ order['member'] }}</strong> ordered <em>{{ order['menu'] }}</em> from <strong>{{ order['vendor'] }}</strong> (DOC: {{ order['doc'] }})
+      </div>
+      <form method="POST" action="{{ url_for('delete', order_id=order['id']) }}" onsubmit="return confirm('Delete this order?');" class="ms-2">
+        <button class="btn btn-sm btn-outline-secondary">Delete</button>
+      </form>
+    </li>
+  {% endfor %}
+  {% if not orders %}
+    <li class="list-group-item text-muted">No orders in this range.</li>
+  {% endif %}
+</ul>
+
+{% endblock %}

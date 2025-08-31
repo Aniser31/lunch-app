@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from datetime import datetime
 import os
 import psycopg2
@@ -9,7 +9,13 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Required for sessions
+app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")  # Required for sessions
+
+# ===============================
+# Admin credentials
+# ===============================
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234")
 
 # ===============================
 # Persistent storage (PostgreSQL)
@@ -21,7 +27,12 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL, sslmode="require")
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL is not set. Did you add it in Railway?")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(db_url, sslmode="require")
 
 def init_db():
     conn = get_conn()
@@ -102,10 +113,10 @@ team_data = {
     "Suyogya": {
         "Suyogya": ["Suyogya", "Ranju Maharjan", "Ishwor Acharya", "Ujwal Shrestha", "Amrita Kumari Shah", "Rashmi Maharjan", "Dilip Khanal"],
         "Farukh": ["Farukh", "Shresna Maharjan", "Jyoti Sardar", "Barsha Raskoti", "Subash Bishunke", "Ronish Makaju", "Inghang Limbu"],
-        "Santosh Sah(M)": ["Santosh Sah(M)", "Harish Bhatta", "Sumitra Gyapak", "Utsav Goja", "Gaurav Dhakal", "Jasmine Dhoju", "Prakash Khati"]
+        "Santosh Sah(M)": ["Santosh Sah", "Harish Bhatta", "Sumitra Gyapak", "Utsav Goja", "Gaurav Dhakal", "Jasmine Dhoju", "Prakash Khati"]
     },
     "Darshan": {
-        "Darshan": ["Darshan", "Bijay Yonjan", "Saroj Suwal", "Astup Dhju", "Nisha Koju", "Rabin Koju", "Srijana Kc"],
+        "Darshan": ["Darshan", "Bijay Yonjan", "Saroj Suwal", "Astup Dhju", "Nisha Koju", "Rabin Koju", "Seesam Maharjan"],
         "Ishwor": ["Ishwor", "Purna Bahadur Shahi", "Kabi raj bhatta", "Nawanit Madhikarmy", "Anurup Chaudhary", "Manisha Bhujel", "Shishir Kandel"],
         "Nabin": ["Nabin", "Puja Chaulagain", "Rupesh Gurung", "Ashish Kumar Sah", "Bina Achhami", "Suraj Devkota", "Alish Poudel"]
     },
@@ -116,16 +127,27 @@ team_data = {
     },
     "Anjana": {
         "Anjana": ["Anjana", "Sumesh Khoju", "Manish Chaudhary", "Suchana GC", "Sudeep", "Karan Achhami"],
-        "Rajesh": ["Rajesh", "Mina Bogati", "Birat Laudari", "Sagar Regmi", "Ashok Makaju", "Rojan Shrestha"]
+        "Rajesh": ["Rajesh", "Mina Bogati", "Birat Laudari", "Sagar Regmi", "Ashok Makaju", "Rojan Shrestha"],
+        "Jeevan": ["Jeevan", "Gaurav Ale Magar", "Bikal Jadali"]
     },
     "Puskar": {
-        "Puskar": ["Puskar", "Anubhav Pancha", "Binita Gora", "Bhakta Achhami", "Binod Dhakal", "Sanish Shrestha"],
-        "Biwas(M)": ["Biwas(M)", "Roshan Pun", "Sadhana Kumari Ray", "Sadipa Dhakal", "Sunita Kumal", "Sushma Achhami"],
+        "Puskar": ["Puskar", "Anubhav Pancha", "Sunita" , "Bhakta Achhami", "Binod Dhakal", "Sanish Shrestha"],
+        "Biwas": ["Biwas", "Roshan Pun", "Sadhana Kumari Ray", "Sadipa Dhakal", "Sunita Kumal", "Sushma Achhami", "Binita Gora"],
         "Bibek": ["Bibek", "Dhan Bahadur BK", "Sikha", "Unika Maharjan", "Abhishek Karki", "Raj Bishunke"]
     },
     "Rukesh": {
-        "Rukesh": ["Rukesh", "Bibek Budha", "Bibita Bati", "Amrit Dhakal", "Milan Suwal", "Sanjok Khadka", "Kriti"],
+        "Rukesh": ["Rukesh", "Bibek Budha", "Bibita Bati", "Amrit Dhakal", "Sanjok Khadka", "Kriti"],
         "Madan Shrestha": ["Madan Shrestha", "Bishal Achhami", "Anil Lakhaju", "Rocky Suwal", "Rahul Garu", "Raskin Baiju", "Rohan Bahala", "Sabina Dhamala"]
+    },
+    "IT/Admin/Managers": {
+        "IT/Admin/Managers": ["Dishoj Sir", "Nilesh Sir", "Saugat Sir", "Manita Budhathoki", "Deebin Shrestha", "Sashank Sir", "Aditya Chaudhary", 
+        "Rejina", "Enjeela Chaudhary", "Raunak Subedi", "Niru Dhaubanjar", "Sujal Shrestha", "Ashant Chaudhary", "Arun Mahara", "Simon Pulami", "Labin Sir", "Bibek Tamang"]
+    },
+    "Pramod Niraula":{
+        "Pramod": ["Aashish Lama", "Puja Kandel", "Swwosti Adhikari"],
+        "Puja": ["Puja Yadav", "Ashwinee Poudel", "Swornima Chaudhary", "Gokul Budha"],
+        "Ashish":["Ashish Chantyal", "AR Ramesh"],
+        "Sarina": ["Sarina Manandhar", "Debit Chaudhary"]
     }
 }
 
@@ -145,14 +167,16 @@ vendor_menus = {
 }
 
 # ===============================
-# Template
+# Template helpers
 # ===============================
-template = """ 
-... (your existing HTML template here unchanged) ...
-"""
+def all_menu_items():
+    items = set()
+    for arr in vendor_menus.values():
+        items.update(arr)
+    return sorted(items)
 
 # ===============================
-# Excel export
+# Excel exports
 # ===============================
 ORDER_PRICE = 85
 
@@ -182,8 +206,9 @@ def generate_orders_excel(orders_to_export, team_data):
     for r in dataframe_to_rows(summary.reset_index(), index=False, header=True):
         ws_summary.append(r)
 
+    # Per-DOC member pages
     for doc in team_data.keys():
-        ws = wb.create_sheet(title=doc)
+        ws = wb.create_sheet(title=doc[:31])  # Excel sheet name limit 31
         ws.append(["Member", "Order Count", "Total Price (Rs)"])
         doc_orders = df[df["doc"] == doc]
         if doc_orders.empty:
@@ -191,6 +216,64 @@ def generate_orders_excel(orders_to_export, team_data):
         member_counts = doc_orders.groupby("member").size()
         for member, count in member_counts.items():
             ws.append([member, int(count), int(count) * ORDER_PRICE])
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    return bio
+
+def generate_food_orders_excel(orders_to_export):
+    """
+    Creates a pivot-style report:
+      Rows = DOCs (plus 'Admin' mapped from 'IT/Admin/Managers')
+      Cols = Food items
+      Values = Count
+      Includes row totals and grand total row/col.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Food Orders"
+
+    if not orders_to_export:
+        # empty workbook
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        return bio
+
+    df = pd.DataFrame(orders_to_export)
+
+    # Normalize DOC name: show 'Admin' for IT/Admin/Managers
+    def map_doc(d):
+        return "Admin" if d == "IT/Admin/Managers" else d
+
+    df["DOC_LABEL"] = df["doc"].apply(map_doc)
+
+    # Columns list includes all known menu items, plus any ad-hoc items found
+    menu_cols = set(all_menu_items())
+    menu_cols.update(df["menu"].unique().tolist())
+    menu_cols = sorted(menu_cols)
+
+    pivot = df.pivot_table(index="DOC_LABEL", columns="menu", values="member", aggfunc="count", fill_value=0)
+
+    # Ensure all expected menu columns exist
+    for col in menu_cols:
+        if col not in pivot.columns:
+            pivot[col] = 0
+    pivot = pivot[menu_cols]  # order columns
+
+    # Add row totals
+    pivot["Total per DOC"] = pivot.sum(axis=1)
+
+    # Add grand total row
+    grand_totals = pivot.sum(axis=0)
+    pivot.loc["Grand Total"] = grand_totals
+
+    # Write header
+    ws.append(["DOC"] + list(pivot.columns))
+    # Write rows
+    for idx, row in pivot.iterrows():
+        ws.append([idx] + list(row.values))
 
     bio = BytesIO()
     wb.save(bio)
@@ -217,14 +300,16 @@ def order():
             "menu": request.form["menu"],
             "date": request.form["date"]
         })
+        flash("Order placed/updated successfully.", "success")
         return redirect(url_for('order'))
 
+    # For the public page we still show existing orders (no admin controls)
     start_date = request.args.get("start_date", "")
     end_date = request.args.get("end_date", "")
     orders = get_orders(start_date if start_date else None, end_date if end_date else None)
 
-    return render_template_string(
-        template,
+    return render_template(
+        "index.html",
         team_data=team_data,
         vendor_menus=vendor_menus,
         selected_doc=selected_doc,
@@ -237,34 +322,55 @@ def order():
         orders=orders
     )
 
-@app.route("/admin-login", methods=["POST"])
-def admin_login():
-    password = request.form.get("admin_password")
-    if password == "1234":
-        session["admin"] = True
-    return redirect(url_for("order"))
+# ---------- Admin ----------
+@app.route("/admin", methods=["GET"])
+def admin():
+    if not session.get("admin"):
+        return redirect(url_for("admin_login"))
+    # Defaults for dashboard filter
+    start_date = request.args.get("start_date", "")
+    end_date = request.args.get("end_date", "")
+    orders = get_orders(start_date if start_date else None, end_date if end_date else None)
+    return render_template("admin_dashboard.html", orders=orders, start_date=start_date, end_date=end_date)
 
-@app.route("/admin-logout", methods=["POST"])
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session["admin"] = True
+            flash("Logged in successfully.", "success")
+            return redirect(url_for("admin"))
+        else:
+            flash("Invalid credentials.", "danger")
+    return render_template("admin_login.html")
+
+@app.route("/admin/logout", methods=["POST"])
 def admin_logout():
     session.pop("admin", None)
+    flash("Logged out.", "info")
     return redirect(url_for("order"))
 
 @app.route("/delete/<int:order_id>", methods=["POST"])
 def delete(order_id):
     if session.get("admin"):
         delete_order(order_id)
-    return redirect(url_for("order"))
+        flash("Order deleted.", "info")
+    return redirect(request.referrer or url_for("admin"))
 
 @app.route("/clear", methods=["POST"])
 def clear_all():
     if session.get("admin"):
         clear_orders()
-    return redirect(url_for("order"))
+        flash("All orders cleared.", "warning")
+    return redirect(request.referrer or url_for("admin"))
 
+# ---------- Exports ----------
 @app.route("/export-excel")
 def export_excel():
     if not session.get('admin'):
-        return redirect(url_for('order'))
+        return redirect(url_for('admin_login'))
 
     start_date = request.args.get("start_date", "")
     end_date = request.args.get("end_date", "")
@@ -275,15 +381,32 @@ def export_excel():
         excel_buffer,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='lunch_orders.xlsx'
+        download_name='lunch_orders_summary.xlsx'
+    )
+
+@app.route("/export-food-excel")
+def export_food_excel():
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+
+    start_date = request.args.get("start_date", "")
+    end_date = request.args.get("end_date", "")
+    orders_to_export = get_orders(start_date if start_date else None, end_date if end_date else None)
+    excel_buffer = generate_food_orders_excel(orders_to_export)
+
+    return send_file(
+        excel_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='lunch_food_orders.xlsx'
     )
 
 # ===============================
 # Start
 # ===============================
-
 # Always run init_db on startup (important for Railway/Gunicorn)
 init_db()
 
 if __name__ == "__main__":
+    # Use PORT from Railway; enable debug locally
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

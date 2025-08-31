@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form method="POST" class="row g-3">
+  <div class="col-12">
+    <label for="doc" class="form-label fw-semibold">Select DOC</label>
+    <select id="doc" name="doc" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Select DOC --</option>
+      {% for doc in team_data %}
+        <option value="{{ doc }}" {% if selected_doc == doc %}selected{% endif %}>{{ doc }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% if selected_doc %}
+  <div class="col-12">
+    <label for="leader" class="form-label fw-semibold">Select Leader</label>
+    <select id="leader" name="leader" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Select Leader --</option>
+      {% for leader in team_data[selected_doc] %}
+        <option value="{{ leader }}" {% if selected_leader == leader %}selected{% endif %}>{{ leader }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  {% if selected_leader %}
+  <div class="col-12">
+    <label for="member" class="form-label fw-semibold">Select Team Member</label>
+    <select id="member" name="member" class="form-select" onchange="this.form.submit()">
+      {% set current_members = team_data[selected_doc][selected_leader] %}
+      {% for member in current_members %}
+        <option value="{{ member }}" {% if selected_member == member %}selected{% endif %}>{{ member }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  <div class="col-12 col-lg-6">
+    <label for="vendor" class="form-label fw-semibold">Select Vendor</label>
+    <select id="vendor" name="vendor" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Select Vendor --</option>
+      {% for vendor in vendor_menus %}
+        <option value="{{ vendor }}" {% if selected_vendor == vendor %}selected{% endif %}>{{ vendor }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% if selected_vendor %}
+  <div class="col-12 col-lg-6">
+    <label for="menu" class="form-label fw-semibold">Select Menu Item</label>
+    <select id="menu" name="menu" class="form-select">
+      {% for item in vendor_menus[selected_vendor] %}
+        <option value="{{ item }}">{{ item }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  <div class="col-12 col-lg-6">
+    <label for="date" class="form-label fw-semibold">Select Date</label>
+    <input id="date" type="date" name="date" value="{{ selected_date or '' }}" class="form-control" required>
+  </div>
+
+  <div class="col-12 d-grid">
+    <button type="submit" class="btn btn-success btn-lg">Place / Update Order</button>
+  </div>
+</form>
+
+<hr class="my-4">
+
+<h5 class="mb-3">Orders</h5>
+
+<form method="GET" action="{{ url_for('order') }}" class="row g-3 align-items-end">
+  <div class="col-12 col-md-4">
+    <label for="start_date" class="form-label">From</label>
+    <input id="start_date" type="date" name="start_date" value="{{ start_date or '' }}" class="form-control">
+  </div>
+  <div class="col-12 col-md-4">
+    <label for="end_date" class="form-label">To</label>
+    <input id="end_date" type="date" name="end_date" value="{{ end_date or '' }}" class="form-control">
+  </div>
+  <div class="col-12 col-md-4 d-grid">
+    <button type="submit" class="btn btn-outline-primary">Apply Filter</button>
+  </div>
+</form>
+
+{% if start_date or end_date %}
+  <p class="text-muted mt-2">
+    Showing orders
+    {% if start_date %} from <strong>{{ start_date }}</strong>{% endif %}
+    {% if end_date %} to <strong>{{ end_date }}</strong>{% endif %}.
+  </p>
+{% else %}
+  <p class="text-muted mt-2">Showing all orders (no filter).</p>
+{% endif %}
+
+<ul class="list-group mt-3">
+  {% for order in orders %}
+    <li class="list-group-item">
+      {{ order['date'] }} — <strong>{{ order['member'] }}</strong> ordered <em>{{ order['menu'] }}</em> from <strong>{{ order['vendor'] }}</strong> (DOC: {{ order['doc'] }})
+    </li>
+  {% endfor %}
+  {% if not orders %}
+    <li class="list-group-item text-muted">No orders yet.</li>
+  {% endif %}
+</ul>
+
+{% endblock %}
