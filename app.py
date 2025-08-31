@@ -139,8 +139,8 @@ team_data = {
         "Rukesh": ["Rukesh", "Bibek Budha", "Bibita Bati", "Amrit Dhakal", "Sanjok Khadka", "Kriti"],
         "Madan Shrestha": ["Madan Shrestha", "Bishal Achhami", "Anil Lakhaju", "Rocky Suwal", "Rahul Garu", "Raskin Baiju", "Rohan Bahala", "Sabina Dhamala"]
     },
-    "IT/Admin/Managers": {
-        "IT/Admin/Managers": ["Dishoj Sir", "Nilesh Sir", "Saugat Sir", "Manita Budhathoki", "Deebin Shrestha", "Sashank Sir", "Aditya Chaudhary", 
+    "Others": {
+        "Others": ["Dishoj Sir", "Nilesh Sir", "Saugat Sir", "Manita Budhathoki", "Deebin Shrestha", "Sashank Sir", "Aditya Chaudhary", 
         "Rejina", "Enjeela Chaudhary", "Raunak Subedi", "Niru Dhaubanjar", "Sujal Shrestha", "Ashant Chaudhary", "Arun Mahara", "Simon Pulami", "Labin Sir", "Bibek Tamang"]
     },
     "Pramod Niraula":{
