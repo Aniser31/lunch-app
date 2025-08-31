@@ -225,10 +225,8 @@ def generate_orders_excel(orders_to_export, team_data):
 def generate_food_orders_excel(orders_to_export):
     """
     Creates a pivot-style report:
-      Rows = DOCs (plus 'Admin' mapped from 'IT/Admin/Managers')
-      Cols = Food items
-      Values = Count
-      Includes row totals and grand total row/col.
+      - "Food Orders" sheet: DOCs vs Food Items
+      - "Total" sheet: Food Item totals across all DOCs
     """
     wb = Workbook()
     ws = wb.active
@@ -254,7 +252,13 @@ def generate_food_orders_excel(orders_to_export):
     menu_cols.update(df["menu"].unique().tolist())
     menu_cols = sorted(menu_cols)
 
-    pivot = df.pivot_table(index="DOC_LABEL", columns="menu", values="member", aggfunc="count", fill_value=0)
+    pivot = df.pivot_table(
+        index="DOC_LABEL",
+        columns="menu",
+        values="member",
+        aggfunc="count",
+        fill_value=0
+    )
 
     # Ensure all expected menu columns exist
     for col in menu_cols:
@@ -269,16 +273,27 @@ def generate_food_orders_excel(orders_to_export):
     grand_totals = pivot.sum(axis=0)
     pivot.loc["Grand Total"] = grand_totals
 
-    # Write header
+    # Write to Food Orders sheet
     ws.append(["DOC"] + list(pivot.columns))
-    # Write rows
     for idx, row in pivot.iterrows():
         ws.append([idx] + list(row.values))
 
+    # ---------- Add TOTAL sheet ----------
+    ws_total = wb.create_sheet(title="Total")
+    ws_total.append(["Menu Item", "Total Orders"])
+
+    total_counts = df["menu"].value_counts().reindex(menu_cols, fill_value=0)
+    for item, count in total_counts.items():
+        ws_total.append([item, int(count)])
+
+    ws_total.append(["Grand Total", int(total_counts.sum())])
+
+    # Save workbook
     bio = BytesIO()
     wb.save(bio)
     bio.seek(0)
     return bio
+
 
 # ===============================
 # Routes
